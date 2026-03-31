@@ -1,0 +1,14 @@
+# Dependencies
+node_modules/
+
+# Environment — contains credentials, never commit
+.env
+
+# macOS
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
