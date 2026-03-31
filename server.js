@@ -10,11 +10,11 @@ const fs      = require('fs');
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
-// ── Config ──────────────────────────────────────────────────────────────────
+// ── Config ────────────────────────────────────────────────────────────────────
 
 const TOKEN_SECRET = process.env.TOKEN_SECRET;
-if (!TOKEN_SECRET ) {
-  console.warn('[WARN] TOKEN_SECRET is not set or is using the default value.');
+if (!TOKEN_SECRET) {
+  console.warn('[WARN] TOKEN_SECRET is not set.');
 }
 
 let VALID_USERS;
@@ -25,18 +25,12 @@ try {
   process.exit(1);
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
-/** Strip non-digit characters for loose phone comparison */
 function normalizePhone(raw) {
   return String(raw).replace(/\D/g, '');
 }
 
-/**
- * Create a short-lived HMAC token.
- * Payload: base64(email + ':' + expiry_timestamp)
- * Signature: HMAC-SHA256(payload, TOKEN_SECRET)
- */
 function createToken(email) {
   const expiry  = Date.now() + 60 * 60 * 1000; // 1 hour
   const payload = Buffer.from(`${email}:${expiry}`).toString('base64url');
@@ -49,16 +43,22 @@ function createToken(email) {
 
 function verifyToken(token) {
   if (!token) return false;
-  const [payload, sig] = token.split('.');
-  if (!payload || !sig) return false;
+  const dot = token.lastIndexOf('.');
+  if (dot === -1) return false;
+
+  const payload = token.slice(0, dot);
+  const sig     = token.slice(dot + 1);
 
   const expected = crypto
     .createHmac('sha256', TOKEN_SECRET)
     .update(payload)
     .digest('base64url');
 
-  // Constant-time comparison to prevent timing attacks
-  if (!crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) {
+  try {
+    if (!crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) {
+      return false;
+    }
+  } catch {
     return false;
   }
 
@@ -66,22 +66,11 @@ function verifyToken(token) {
   return Date.now() < Number(expiry);
 }
 
-// ── Middleware ────────────────────────────────────────────────────────────────
+// ── Body parser ───────────────────────────────────────────────────────────────
 
 app.use(express.json());
 
-// Serve public static assets (style.css, guard.js, main.js, logo — NOT content.html)
-app.use('/assets', (req, res, next) => {
-  if (req.path === '/content.html') {
-    return res.status(403).json({ error: 'Forbidden' });
-  }
-  next();
-}, express.static(path.join(__dirname, 'assets')));
-
-// Serve index.html
-app.use(express.static(__dirname, { index: 'index.html' }));
-
-// ── API Routes ────────────────────────────────────────────────────────────────
+// ── API routes (must be before static middleware) ─────────────────────────────
 
 /**
  * POST /api/verify
@@ -91,6 +80,10 @@ app.use(express.static(__dirname, { index: 'index.html' }));
 app.post('/api/verify', (req, res) => {
   const email = String(req.body.email || '').trim().toLowerCase();
   const phone = normalizePhone(req.body.phone || '');
+
+  if (!email || !phone) {
+    return res.status(400).json({ error: 'Email và số điện thoại là bắt buộc.' });
+  }
 
   const match = VALID_USERS.find(
     (u) =>
@@ -124,6 +117,26 @@ app.get('/api/content', (req, res) => {
   }
 
   res.sendFile(contentPath);
+});
+
+// ── Static assets (after API routes) ─────────────────────────────────────────
+
+// Public assets — block direct access to content.html
+app.use('/assets', (req, res, next) => {
+  if (req.path === '/content.html') {
+    return res.status(403).end();
+  }
+  next();
+}, express.static(path.join(__dirname, 'assets')));
+
+// Serve only index.html from the root (do NOT expose server files)
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// Catch-all: return index.html for any unmatched route (SPA fallback)
+app.use((req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 // ── Start ─────────────────────────────────────────────────────────────────────
