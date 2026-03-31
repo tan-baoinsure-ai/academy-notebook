@@ -130,12 +130,12 @@ app.use('/assets', (req, res, next) => {
 }, express.static(path.join(__dirname, 'assets')));
 
 // Serve only index.html from the root (do NOT expose server files)
-app.get('/', (req, res) => {
+app.get('/', (_req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 // Catch-all: return index.html for any unmatched route (SPA fallback)
-app.use((req, res) => {
+app.use((_req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
