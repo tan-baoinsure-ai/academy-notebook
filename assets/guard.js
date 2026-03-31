@@ -13,6 +13,8 @@
 // Mockup whitelist — each entry must match on BOTH email and phone
 const VALID_USERS = [
   { email: 'tanleit151@gmail.com',   phone: '0379793815' },
+  { email: 'anh.phan@baoacademy.ai',   phone: '0374057248' },
+  { email: 'ducminh.htdn@gmail.com',   phone: '0339230429' },
   { email: 'tranthaovy2801@gmail.com',   phone: '0942277045' },
   { email: ' nguyenphamanhkhoa1807@gmail.com',     phone: '0348857093' },
   { email: 'nguyenbichnhi01021994@gmail.com', phone: '0886622090' },
