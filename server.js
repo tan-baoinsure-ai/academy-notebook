@@ -6,6 +6,7 @@ const express = require('express');
 const crypto  = require('crypto');
 const path    = require('path');
 const fs      = require('fs');
+const { createClient } = require('@supabase/supabase-js');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -17,13 +18,10 @@ if (!TOKEN_SECRET) {
   console.warn('[WARN] TOKEN_SECRET is not set.');
 }
 
-let VALID_USERS;
-try {
-  VALID_USERS = JSON.parse(process.env.VALID_USERS || '[]');
-} catch {
-  console.error('[ERROR] VALID_USERS in .env is not valid JSON.');
-  process.exit(1);
-}
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -77,7 +75,7 @@ app.use(express.json());
  * Body: { email, phone }
  * Returns: { token } on success, 401 on mismatch
  */
-app.post('/api/verify', (req, res) => {
+app.post('/api/verify', async (req, res) => {
   const email = String(req.body.email || '').trim().toLowerCase();
   const phone = normalizePhone(req.body.phone || '');
 
@@ -85,13 +83,15 @@ app.post('/api/verify', (req, res) => {
     return res.status(400).json({ error: 'Email và số điện thoại là bắt buộc.' });
   }
 
-  const match = VALID_USERS.find(
-    (u) =>
-      u.email.trim().toLowerCase() === email &&
-      normalizePhone(u.phone) === phone
-  );
+  const { data } = await supabase
+    .from('valid_users')
+    .select('id')
+    .eq('email', email)
+    .eq('phone', phone)
+    .limit(1)
+    .maybeSingle();
 
-  if (!match) {
+  if (!data) {
     return res.status(401).json({ error: 'Email hoặc số điện thoại không khớp.' });
   }
 

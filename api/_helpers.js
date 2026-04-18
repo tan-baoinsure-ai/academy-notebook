@@ -1,8 +1,15 @@
 'use strict';
 
 const crypto = require('crypto');
+const { createClient } = require('@supabase/supabase-js');
 
 const TOKEN_SECRET = process.env.TOKEN_SECRET;
+
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 function normalizePhone(raw) {
   return String(raw).replace(/\D/g, '');
@@ -43,12 +50,15 @@ function verifyToken(token) {
   return Date.now() < Number(expiry);
 }
 
-function getValidUsers() {
-  try {
-    return JSON.parse(process.env.VALID_USERS || '[]');
-  } catch {
-    return [];
-  }
+async function findUser(email, phone) {
+  const { data } = await supabase
+    .from('valid_users')
+    .select('id')
+    .eq('email', email.toLowerCase().trim())
+    .eq('phone', normalizePhone(phone))
+    .limit(1)
+    .maybeSingle();
+  return data !== null;
 }
 
-module.exports = { normalizePhone, createToken, verifyToken, getValidUsers };
+module.exports = { normalizePhone, createToken, verifyToken, findUser };

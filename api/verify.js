@@ -1,8 +1,8 @@
 'use strict';
 
-const { normalizePhone, createToken, getValidUsers } = require('./_helpers');
+const { normalizePhone, createToken, findUser } = require('./_helpers');
 
-module.exports = function handler(req, res) {
+module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -14,13 +14,9 @@ module.exports = function handler(req, res) {
     return res.status(400).json({ error: 'Email và số điện thoại là bắt buộc.' });
   }
 
-  const match = getValidUsers().find(
-    (u) =>
-      u.email.trim().toLowerCase() === email &&
-      normalizePhone(u.phone) === phone
-  );
+  const found = await findUser(email, phone);
 
-  if (!match) {
+  if (!found) {
     return res.status(401).json({ error: 'Email hoặc số điện thoại không khớp.' });
   }
 
