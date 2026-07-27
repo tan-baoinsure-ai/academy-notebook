@@ -4,6 +4,11 @@ node_modules/
 # Environment — contains credentials, never commit
 .env
 
+# User PII — never commit
+data.json
+data.txt
+scripts/seed.sql
+
 # macOS
 .DS_Store
 

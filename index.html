@@ -10,23 +10,21 @@
 </head>
 <body>
 
-<div id="guard-overlay">
-  <div class="guard-card">
-    <div class="guard-logo">
-      <img src="assets/academy-logo.png" alt="BAO Academy" width="120">
-    </div>
-    <div class="guard-title">Xác thực truy cập</div>
-    <div class="guard-sub">Nhập email và số điện thoại để truy cập tài liệu <strong>NotebookLM 2026</strong></div>
-    <input id="guard-email" class="guard-input" type="email" placeholder="email@example.com" autocomplete="email"/>
-    <input id="guard-phone" class="guard-input" type="tel" placeholder="Số điện thoại (vd: 0912345678)" autocomplete="tel" style="margin-top:.6rem"/>
-    <button id="guard-btn" class="guard-btn" onclick="guardSubmit()">Truy cập tài liệu →</button>
-    <div class="guard-error" id="guard-error"></div>
-  </div>
-</div>
-
 <div id="sidebar"></div>
 <div id="main"></div>
 
-<script src="assets/guard.js"></script>
+<script>
+fetch('/assets/content.html')
+  .then((res) => res.text())
+  .then((html) => {
+    document.body.insertAdjacentHTML('beforeend', html);
+    document.getElementById('sidebar')?.remove();
+    document.getElementById('main')?.remove();
+
+    const s = document.createElement('script');
+    s.src = '/assets/main.js';
+    document.body.appendChild(s);
+  });
+</script>
 </body>
 </html>
